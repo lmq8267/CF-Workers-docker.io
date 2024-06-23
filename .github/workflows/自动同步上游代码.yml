@@ -1,0 +1,39 @@
+name: 同步上游代码
+
+#设置工作流具有写入的权限
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 设置为每天北京时间十一点自动执行
+  workflow_dispatch:   #设置允许手动执行
+
+jobs:
+  sync:
+    name: 同步上游代码
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork }}  #判断此仓库为fork的才执行后续操作
+    
+    steps:
+      - name: 将当前仓库设为工作目录路径
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.c8 }} #设置具有写入操作的token（GITHUB_TOKEN自动生成的token无法写入workflows文件）
+
+      - name: 执行同步
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          upstream_sync_repo: cmliu/CF-Workers-docker.io  #上游用户名及仓库名
+          upstream_sync_branch: main   #上游分支名
+          target_sync_branch: main  #当前仓库分支名
+          #target_repo_token: ${{ secrets.GITHUB_TOKEN }} # 自动生成token，无需手动设置（GITHUB_TOKEN自动生成的token无法写入workflows文件已注释掉）
+
+          # 如果将 test_mode 设置为 true 就会测试运行而不是同步实际操作并不会修改代码
+          test_mode: false
+
+      - name: 检查同步状态
+        if: failure()
+        run: |
+          echo "[错误] 由于上游仓库的 workflow 文件变更，导致 GitHub 自动暂停了本次自动更新，你需要手动执行一次同步上游代码。"
+          exit 1
