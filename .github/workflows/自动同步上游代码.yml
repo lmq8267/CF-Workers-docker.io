@@ -16,6 +16,12 @@ jobs:
     if: ${{ github.event.repository.fork }}  #判断此仓库为fork的才执行后续操作
     
     steps:
+      - name: 删除工作流
+        uses: GitRML/delete-workflow-runs@main
+        with:
+         token: ${{ secrets.c8 }}
+         retain_days: 2
+         keep_minimum_runs: 1
       - name: 将当前仓库设为工作目录路径
         uses: actions/checkout@v4
         #with:
